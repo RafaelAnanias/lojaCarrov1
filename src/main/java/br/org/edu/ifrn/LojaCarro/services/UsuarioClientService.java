@@ -5,6 +5,8 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
+import org.springframework.web.context.request.RequestContextHolder;
+import org.springframework.web.context.request.ServletRequestAttributes;
 import org.springframework.web.reactive.function.client.WebClient;
 import reactor.core.publisher.Mono;
 
@@ -18,8 +20,17 @@ public class UsuarioClientService {
 
     public Usuario buscarPorId(Long id) {
         log.info("Consultando usuário ID {} na API de usuários", id);
+
+        ServletRequestAttributes attrs = (ServletRequestAttributes) RequestContextHolder.getRequestAttributes();
+        String authHeader = (attrs != null) ? attrs.getRequest().getHeader("Authorization") : null;
+
         return usuarioWebClient.get()
                 .uri("/usuario/{id}", id)
+                .headers(headers -> {
+                    if (authHeader != null) {
+                        headers.set("Authorization", authHeader);
+                    }
+                })
                 .retrieve()
                 .bodyToMono(Usuario.class)
                 .onErrorResume(e -> {
